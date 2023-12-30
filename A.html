@@ -1,0 +1,169 @@
+DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatDane</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f0f0; /* Light grey background */
+      background-color: black;
+    }
+
+    .chat-container {
+      max-width: 600px;
+      margin: 50px auto;
+      background-color: #fff; /* White chat box */
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .chat-header {
+      background-color:lightseagreen; /* Google blue */
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+      font-size: 24px;
+      border-bottom: 2px solid lightseagreen;
+      border-radius: 10px 10px 0 0;
+    }
+
+    .chat-messages {
+      padding: 20px;
+      overflow-y: auto;
+      max-height: 300px;
+      background-color: #f9f9f9; /* Lighter grey for messages */
+      border-bottom: 1px solid #ddd; /* Separator line */
+    }
+
+    .message {
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .user-message {
+      background-color: lightseagreen; /* User message color */
+      color: #fff;
+      text-align: right;
+    }
+
+    .bot-message {
+      background-color: black; /* Bot message color */
+      color: #fff;
+    }
+
+    .message-input {
+      width: calc(100% - 40px);
+      padding: 10px;
+      border: none;
+      border-top: 1px solid #ddd;
+      border-radius: 0 0 10px 10px;
+      margin: 0 20px;
+      box-sizing: border-box;
+      background-color: #fff;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .send-button {
+      background-color:brown;/* Google blue */
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="chat-container">
+    <div class="chat-header">
+      ChatDane
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <!-- Messages will be dynamically added here -->
+    </div>
+    <input type="text" class="message-input" id="user-input" placeholder="Type your message..." onkeydown="handleEnterKey(event)">
+    <button class="send-button" onclick="sendMessage()">Ask me anything</button>
+  </div>
+
+  <script>
+    function handleEnterKey(event) {
+      if (event.keyCode === 13) {
+        event.preventDefault();
+        sendMessage();
+      }
+    }
+
+    async function sendMessage() {
+      const userInput = document.getElementById('user-input').value;
+      const chatMessages = document.getElementById('chat-messages');
+
+      if (userInput.trim() !== '') {
+        const userMessage = document.createElement('div');
+        userMessage.className = 'message user-message';
+        userMessage.textContent = userInput;
+        chatMessages.appendChild(userMessage);
+
+        // Show loading indicator
+        chatMessages.innerHTML += '<div class="message bot-message">ChatDane typing...</div>';
+
+        const botResponse = await generateGptResponse(userInput);
+
+        // Remove loading indicator
+        document.querySelector('.bot-message:last-child').remove();
+
+        // Apply content filtering
+        const filteredResponse = filterInappropriateContent(botResponse);
+
+        const botMessage = document.createElement('div');
+        botMessage.className = 'message bot-message';
+        botMessage.textContent = 'Chatdane: ' + truncateResponse(filteredResponse, 80); // Adjusted max length to 50
+        chatMessages.appendChild(botMessage);
+
+        document.getElementById('user-input').value = '';
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+    }
+
+    async function generateGptResponse(userInput) {
+      const apiKey = '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'; // Replace with your actual API key
+      const apiUrl = 'https://api.openai.com/v1/engines/davinci/completions';
+    
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          prompt: `What is the capital of the USA?`,
+          max_tokens: 30, // Adjust this value to control the length of the response
+        }),
+      });
+
+      const responseData = await response.json();
+      return responseData.choices[0].text.trim();
+    }
+
+    function truncateResponse(response, maxLength) {
+      return response.length <= maxLength ? response : response.substring(0, maxLength) + '...';
+    }
+
+    function filterInappropriateContent(response) {
+      // Implement your filtering logic here
+      // Example: Replace the word "stupid" with asterisks
+      const filteredResponse = response.replace(/\b(?:stupid)\b/gi, '*****');
+      return filteredResponse;
+    }
+  </script>
+
+</body>
+</html>
